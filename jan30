@@ -1,4 +1,5 @@
 #cleaned up code and attempted predict(), having trouble with envr length /= 1 error
+#found mistake in size_midpoint, corrected and had significant change in violent ggplot
 
 library(tidyverse)
 
@@ -14,7 +15,7 @@ navco <- navco %>% mutate(years_passed = row_number())
 navco <- navco %>% mutate(progress_made = ifelse(cum_progress >= 1, 1, 0), first_event = ifelse(years_passed>1 & progress_made==1, ifelse(lag(progress_made, n=1L, detault = NA, order_by = years_passed)==1, NA, progress_made), progress_made))
 
 #size midpoint
-navco <- navco %>% mutate(size_midpoint = ifelse(camp_size == 1, 499, ifelse(camp_size == 2, 5499, ifelse(camp_size == 3, 54999, ifelse(camp_size == 4, 299999, ifelse(camp_size == 5, 750000, ifelse(camp_size == -99, NA, NA) ))))))
+navco <- navco %>% mutate(size_midpoint = ifelse(camp_size == 0, 499, ifelse(camp_size == 1, 5499, ifelse(camp_size == 2, 54999, ifelse(camp_size == 3, 299999, ifelse(camp_size == 4, 750000, ifelse(camp_size == 5, 1000001, ifelse(camp_size == -99, NA, NA))))))))
 
 library(MASS)
 library(ggplot2)
@@ -41,8 +42,10 @@ summary(nonviolent_model)
 ggplot(nonviolent_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + 
   labs( title = "Nonviolent Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
 
+random <- runif(100, 0, 1000001)
 predict.nonviolent <- predict(nonviolent_model, newdata = nonviolent_navco$first_event, interval = "confidence")
 
+help(loess)
 
 #marxist is grievances, setting the terms of the debate, make a gap obvious
 #mao, tilly, tureau
