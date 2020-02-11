@@ -1,5 +1,5 @@
-#added predict() from book, output does not match ggplot
-
+#working with predict, 
+#ie a row where an event happened (=1), and size is 250000, should have a probability of around .25 of a first event according to the ggplot, but the predict() output is giving me -0.45.
 
 library(tidyverse)
 setwd("/Users/nolanroosa/Desktop")
@@ -44,11 +44,14 @@ summary(nonviolent_model)
 ggplot(nonviolent_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + 
   labs( title = "Nonviolent Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
 
-random <- runif(100, 0, 1000001)
-predict.nonviolent <- predict(nonviolent_model, newdata = nonviolent_navco$first_event, interval = "confidence")
+predict(violent_model, newdata = navco)
+#can i add a confidence interval to prediction
+predictnv <- predict(nonviolent_model, newdata = navco)
+combine <- merge(predictnv, nonviolent_navco)
+
+#wanted to plot prediction vs first_event, looking for slope of 1
+#ggplot(combine, aes(x = "x", y = "first_event")) + geom_point()
 
 
-predict(violent_model, newdata = navco[6, ])
-
-predict(nonviolent_model, newdata = navco[9, ])
-
+#marxist is grievances, setting the terms of the debate, make a gap obvious
+#mao, tilly, tureau
