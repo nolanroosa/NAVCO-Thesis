@@ -1,0 +1,54 @@
+#added predict() from book, output does not match ggplot
+
+
+library(tidyverse)
+setwd("/Users/nolanroosa/Desktop")
+
+navco <- read_csv(file = "navco.csv")
+
+#sum of progress
+navco <- navco %>% group_by(id) %>% arrange(id) %>% mutate(cum_progress = cumsum(progress))
+
+#years passed
+navco <- navco %>% mutate(years_passed = row_number())
+
+#first event
+navco <- navco %>% mutate(progress_made = ifelse(cum_progress >= 1, 1, 0), first_event = ifelse(years_passed>1 & progress_made==1, ifelse(lag(progress_made, n=1L, detault = NA, order_by = years_passed)==1, NA, progress_made), progress_made))
+
+#size midpoint
+navco <- navco %>% mutate(size_midpoint = ifelse(camp_size == 0, 499, ifelse(camp_size == 1, 5499, ifelse(camp_size == 2, 54999, ifelse(camp_size == 3, 299999, ifelse(camp_size == 4, 750000, ifelse(camp_size == 5, 1000001, ifelse(camp_size == -99, NA, NA))))))))
+
+library(MASS)
+library(ggplot2)
+
+event_size_model <- glm(first_event ~ size_midpoint, family = binomial(link = 'logit'), data = navco)
+summary(event_size_model)
+
+#aggregate
+event_size_plot <- ggplot(event_size_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + 
+  labs( title = "Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
+ggplot(event_size_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + 
+  labs( title = "Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
+
+#violent
+violent_navco <- navco %>% group_by(prim_method) %>% filter(prim_method == 1)
+violent_model <- glm(first_event ~ size_midpoint,family = binomial(link = 'logit'), data = violent_navco)
+summary(violent_model)
+ggplot(violent_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + 
+  labs( title = "Violent Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
+
+#nonviolent
+nonviolent_navco <- navco %>% group_by(prim_method) %>% filter(prim_method == 0)
+nonviolent_model <- glm(first_event ~ size_midpoint, family = binomial(link = 'logit'), data = nonviolent_navco)
+summary(nonviolent_model)
+ggplot(nonviolent_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + 
+  labs( title = "Nonviolent Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
+
+random <- runif(100, 0, 1000001)
+predict.nonviolent <- predict(nonviolent_model, newdata = nonviolent_navco$first_event, interval = "confidence")
+
+
+predict(violent_model, newdata = navco[6, ])
+
+predict(nonviolent_model, newdata = navco[9, ])
+
