@@ -20,20 +20,27 @@ navco <- navco %>% arrange(id) %>% mutate(size_dummy1 = ifelse(camp_size == 1, 1
 #square and cube of size
 navco <- navco %>% group_by(size_midpoint) %>% mutate(size_sqr = size_midpoint^2, size_cube = size_midpoint^3)
                            
-#ordered logit, PLAY WITH THIS
 library(MASS)
 library(ggplot2)
 
 event_size_model <- glm(first_event ~ size_midpoint, data = navco)
 summary(event_size_model)
 event_size_plot <- ggplot(event_size_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "lm") + labs( title = "Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
+ggplot(event_size_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "lm") + labs( title = "Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
 
 event_time_model <- glm(first_event ~ years_passed, data = navco)
 summary(event_time_model)
-ggplot(event_time_model, aes(x= years_passed, y = first_event)) + geom_point() + geom_smooth(method = "lm") + labs( title = "Time Passed and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Campaign Duration")
+event_time_plot <- ggplot(event_time_model, aes(x= years_passed, y = first_event)) + geom_point() + geom_smooth(method = "lm") + labs( title = "Time Passed and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Campaign Duration")
 
+violent_navco <- navco %>% group_by(prim_method) %>% filter(prim_method == 1)
+violent_event_size_model <- glm(first_event ~ size_midpoint, data = violent_navco)
+summary(violent_event_size_model)
+ggplot(violent_event_size_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "lm") + labs( title = "Violent Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
 
-ologit <- polr(first_event ~ size_midpoint, data = navco)
+nonviolent_navco <- navco %>% group_by(prim_method) %>% filter(prim_method == 0)
+nonviolent_event_size_model <- glm(first_event ~ size_midpoint, data = nonviolent_navco)
+summary(nonviolent_event_size_model)
+ggplot(nonviolent_event_size_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "lm") + labs( title = "Nonviolent Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
 
-
-#plot
+#progress o logit?
+ologit <- polr(cum_progress ~ size_midpoint, data = navco)
