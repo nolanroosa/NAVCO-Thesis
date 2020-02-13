@@ -1,26 +1,31 @@
 library(tidyverse)
+library(ggplot2)
 setwd("/Users/nolanroosa/Desktop")
 
 navco <- read.csv(file = "navco.csv")
-navco <- navco %>% group_by(id) %>% arrange(id) %>% mutate(cum_progress = cumsum(progress))
-navco <- navco %>% mutate(years_passed = row_number())
-navco <- navco %>% mutate(progress_made = ifelse(cum_progress >= 1, 1, 0), first_event = ifelse(years_passed>1 & progress_made==1, ifelse(lag(progress_made, n=1L, detault = NA, order_by = years_passed)==1, NA, progress_made), progress_made))
-navco <- navco %>% mutate(size_midpoint = ifelse(camp_size == 0, 499, ifelse(camp_size == 1, 5499, ifelse(camp_size == 2, 54999, ifelse(camp_size == 3, 299999, ifelse(camp_size == 4, 750000, ifelse(camp_size == 5, 1000001, ifelse(camp_size == -99, NA, NA))))))))
-navco <- navco %>% mutate(size_log = log10(size_midpoint))
-
-library(ggplot2)
+navco <- navco %>% group_by(id) %>% arrange(id) %>% mutate(cum_progress = cumsum(progress)) %>% 
+  mutate(years_passed = row_number()) %>% mutate(progress_made = ifelse(cum_progress >= 1, 1, 0), first_event = ifelse(years_passed>1 & progress_made==1, ifelse(lag(progress_made, n=1L, detault = NA, order_by = years_passed)==1, NA, progress_made), progress_made)) %>% 
+  mutate(size_midpoint = ifelse(camp_size == 0, 499, ifelse(camp_size == 1, 5499, ifelse(camp_size == 2, 54999, ifelse(camp_size == 3, 299999, ifelse(camp_size == 4, 750000, ifelse(camp_size == 5, 1000001, ifelse(camp_size == -99, NA, NA)))))))) %>% 
+  mutate(size_log = log10(size_midpoint))
 
 #agg
 event_size_model <- glm(first_event ~ size_midpoint, family = binomial(link = 'logit'), data = navco, na.action=na.exclude)
 summary(event_size_model)
-pred_values <- predict(event_size_model, type="response")
-navco$pred_values <- pred_values
-event_size_plot <- ggplot(navco, aes(x= size_midpoint, y = pred_values)) + geom_point()  + geom_line() + 
+
+navco$pred_values <- predict(event_size_model, type="response")
+navco$pred_values_fit <-  predict(event_size_model, type="response", se.fit=TRUE, interval="confidence")$fit
+navco$pred_values_sefit <- predict(event_size_model, type="response", se.fit=TRUE)$se.fit
+event_size_plot <- ggplot(navco, aes(x= size_midpoint, y = pred_values)) + geom_point()  + geom_smooth(method = 'loess') +
   labs( title = "Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
 event_size_plot
 
+#set of predict and se
+predict_values <- as.data.frame(cbind(navco$pred_values, navco$pred_values_fit, navco$pred_values_sefit))
+
 #violent
 navco <- navco %>% mutate(vpred_values = ifelse(prim_method == 1, pred_values, NA))
+navco <- navco %>% mutate(vpred_values_fit = ifelse(prim_method == 1, pred_values, NA))
+
 ggplot(navco, aes(x= size_midpoint, y = vpred_values)) + geom_point() + geom_smooth(method = 'loess') + geom_jitter() +
   labs( title = "Violent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
 
@@ -28,7 +33,6 @@ ggplot(navco, aes(x= size_midpoint, y = vpred_values)) + geom_point() + geom_smo
 navco <- navco %>% mutate(nvpred_values = ifelse(prim_method == 0, pred_values, NA))
 ggplot(navco, aes(x= size_midpoint, y = nvpred_values)) + geom_point() + geom_smooth(method = "loess") + geom_jitter() +
   labs( title = "Nonviolent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
-
 
 #plots with log
 #violent
@@ -38,9 +42,8 @@ ggplot(navco, aes(x= size_log, y = vpred_values)) + geom_point() + geom_smooth(m
 ggplot(navco, aes(x= size_log, y = nvpred_values)) + geom_point() + geom_smooth(method = "loess") + geom_jitter() +
   labs( title = "Nonviolent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Log10 Movement Size Midpoint")
 
-
-
-#predict(se.fit = TRUE)
 #error bar
 #summarize, i want unique predictions
-#add predict, se, and se.fit
+
+#marxist is grievances, setting the terms of the debate, make a gap obvious
+#mao, tilly, thoreau
