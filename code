@@ -1,4 +1,8 @@
+#working with predict, 
+#ie a row where an event happened (=1), and size is 250000, should have a probability of around .25 of a first event according to the ggplot, but the predict() output is giving me -0.45.
+
 library(tidyverse)
+setwd("/Users/nolanroosa/Desktop")
 
 navco <- read_csv(file = "navco.csv")
 
@@ -12,38 +16,42 @@ navco <- navco %>% mutate(years_passed = row_number())
 navco <- navco %>% mutate(progress_made = ifelse(cum_progress >= 1, 1, 0), first_event = ifelse(years_passed>1 & progress_made==1, ifelse(lag(progress_made, n=1L, detault = NA, order_by = years_passed)==1, NA, progress_made), progress_made))
 
 #size midpoint
-navco <- navco %>% mutate(size_midpoint = ifelse(camp_size == 1, 499, ifelse(camp_size == 2, 5499, ifelse(camp_size == 3, 54999, ifelse(camp_size == 4, 299999, ifelse(camp_size == 5, 750000, ifelse(camp_size == -99, NA, NA) ))))))
+navco <- navco %>% mutate(size_midpoint = ifelse(camp_size == 0, 499, ifelse(camp_size == 1, 5499, ifelse(camp_size == 2, 54999, ifelse(camp_size == 3, 299999, ifelse(camp_size == 4, 750000, ifelse(camp_size == 5, 1000001, ifelse(camp_size == -99, NA, NA))))))))
 
-#dummy variables
-navco <- navco %>% arrange(id) %>% mutate(size_dummy1 = ifelse(camp_size == 1, 1, 0), size_dummy2 = ifelse(camp_size == 2, 1, 0), size_dummy3= ifelse(camp_size == 3, 1, 0), size_dummy4 = ifelse(camp_size == 4, 1, 0), size_dummy5 = ifelse(camp_size == 5, 1, 0)) 
-
-#square and cube of size
-navco <- navco %>% group_by(size_midpoint) %>% mutate(size_sqr = size_midpoint^2, size_cube = size_midpoint^3)
-                           
 library(MASS)
 library(ggplot2)
 
 event_size_model <- glm(first_event ~ size_midpoint, family = binomial(link = 'logit'), data = navco)
 summary(event_size_model)
 
-event_size_plot <- ggplot(event_size_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + labs( title = "Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
-ggplot(event_size_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + labs( title = "Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
+#aggregate
+event_size_plot <- ggplot(event_size_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + 
+  labs( title = "Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
+ggplot(event_size_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + 
+  labs( title = "Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
 
+#violent
 violent_navco <- navco %>% group_by(prim_method) %>% filter(prim_method == 1)
-violent_event_size_model <- glm(first_event ~ size_midpoint,family = binomial(link = 'logit'), data = violent_navco)
-summary(violent_event_size_model)
-ggplot(violent_event_size_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + labs( title = "Violent Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
+violent_model <- glm(first_event ~ size_midpoint,family = binomial(link = 'logit'), data = violent_navco)
+summary(violent_model)
+ggplot(violent_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + 
+  labs( title = "Violent Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
 
+#nonviolent
 nonviolent_navco <- navco %>% group_by(prim_method) %>% filter(prim_method == 0)
-nonviolent_event_size_model <- glm(first_event ~ size_midpoint, family = binomial(link = 'logit'), data = nonviolent_navco)
-summary(nonviolent_event_size_model)
-ggplot(nonviolent_event_size_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + labs( title = "Nonviolent Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
+nonviolent_model <- glm(first_event ~ size_midpoint, family = binomial(link = 'logit'), data = nonviolent_navco)
+summary(nonviolent_model)
+ggplot(nonviolent_model, aes(x= size_midpoint, y = first_event)) + geom_point() + geom_smooth(method = "loess") + 
+  labs( title = "Nonviolent Movement Size and Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
 
-#progress o logit?
-ologit <- polr(cum_progress ~ size_midpoint, data = navco)
+predict(violent_model, newdata = navco)
+#can i add a confidence interval to prediction
+predictnv <- predict(nonviolent_model, newdata = navco)
+combine <- merge(predictnv, nonviolent_navco)
 
-#method loess instead of lm
+#wanted to plot prediction vs first_event, looking for slope of 1
+#ggplot(combine, aes(x = "x", y = "first_event")) + geom_point()
+
+
 #marxist is grievances, setting the terms of the debate, make a gap obvious
 #mao, tilly, tureau
-#binomial(link = "logit")
-#predict command
