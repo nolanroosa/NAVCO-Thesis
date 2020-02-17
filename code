@@ -21,6 +21,9 @@ event_size_plot
 
 #set of predict and se
 predict_values <- as.data.frame(cbind(navco$pred_values, navco$pred_values_fit, navco$pred_values_sefit))
+colnames(predict_values)[1] <- "pred_values"
+colnames(predict_values)[2] <- "fit"
+colnames(predict_values)[3] <- "se.fit"
 
 #violent
 navco <- navco %>% mutate(vpred_values = ifelse(prim_method == 1, pred_values, NA))
@@ -44,6 +47,7 @@ ggplot(navco, aes(x= size_log, y = nvpred_values)) + geom_point() + geom_smooth(
 
 #error bar
 #summarize, i want unique predictions
+# summarize with multiple unique conditions
 
 #marxist is grievances, setting the terms of the debate, make a gap obvious
 #mao, tilly, thoreau
