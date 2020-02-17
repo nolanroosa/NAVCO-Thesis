@@ -45,6 +45,11 @@ ggplot(navco, aes(x= size_log, y = vpred_values)) + geom_point() + geom_smooth(m
 ggplot(navco, aes(x= size_log, y = nvpred_values)) + geom_point() + geom_smooth(method = "loess") + geom_jitter() +
   labs( title = "Nonviolent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Log10 Movement Size Midpoint")
 
+#plots with groups
+
+navco_sum <- navco %>% group_by(size_midpoint) %>% summarize(pred_values)
+
+
 #error bar
 #summarize, i want unique predictions
 # summarize with multiple unique conditions
