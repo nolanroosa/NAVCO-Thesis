@@ -39,13 +39,17 @@ ggplot(navco, aes(x= size_log, y = vpred_values)) + geom_point() + geom_smooth(m
 ggplot(navco, aes(x= size_log, y = nvpred_values)) + geom_point() + geom_smooth(method = "loess") + geom_jitter() +
   labs( title = "Nonviolent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Log10 Movement Size Midpoint")
 
-
+#test difference
 predictions <- as.data.frame(cbind(navco$size_midpoint, navco$vpred_values, navco$nvpred_values))
 colnames(predictions)[1] <- "size_midpoint"
 colnames(predictions)[2] <- "violent"
 colnames(predictions)[3] <- "nonviolent"
 
-predictions <- predictions %>% group_by(size_midpoint) %>% summarize(minPred = min(pred_values))
+navco_filter <- navco %>% filter(!is.na(nvpred_values), !is.na(size_midpoint))
+predictions <- navco_filter %>% group_by(size_midpoint) %>% summarize(nonviolent = min(nvpred_values))
+navco_filter <- navco %>% filter(!is.na(vpred_values), !is.na(size_midpoint))
+predictions$violent <- navco_filter %>% group_by(size_midpoint) %>% summarize(violent = min(vpred_values))
+
 
 #test difference between two models
 
