@@ -47,7 +47,9 @@ ggplot(navco, aes(x= size_log, y = nvpred_values)) + geom_point() + geom_smooth(
 
 #plots with groups
 
-navco_sum <- navco %>% group_by(size_midpoint) %>% summarize(pred_values)
+
+
+navco_sum <- navco %>% group_by(size_midpoint) %>% summarize(minPred = min(pred_values))
 
 
 #error bar
