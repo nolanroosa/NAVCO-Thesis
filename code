@@ -13,28 +13,22 @@ event_size_model <- glm(first_event ~ size_midpoint, family = binomial(link = 'l
 summary(event_size_model)
 
 navco$pred_values <- predict(event_size_model, type="response")
-navco$pred_values_fit <-  predict(event_size_model, type="response", se.fit=TRUE, interval="confidence")$fit
-navco$pred_values_sefit <- predict(event_size_model, type="response", se.fit=TRUE)$se.fit
-event_size_plot <- ggplot(navco, aes(x= size_midpoint, y = pred_values)) + geom_point()  + geom_smooth(method = 'loess') +
-  labs( title = "Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
-event_size_plot
+navco$pred_values_se <- predict(event_size_model, type="response", se.fit=TRUE)$se.fit
 
-#set of predict and se
-predict_values <- as.data.frame(cbind(navco$pred_values, navco$pred_values_fit, navco$pred_values_sefit))
-colnames(predict_values)[1] <- "pred_values"
-colnames(predict_values)[2] <- "fit"
-colnames(predict_values)[3] <- "se.fit"
+navco_filter <- navco %>% filter(!is.na(pred_values), !is.na(size_midpoint))
+ggplot(navco_filter, aes(x= size_midpoint, y = pred_values)) + geom_point()  + geom_line() +
+  labs( title = "Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
 
 #violent
-navco <- navco %>% mutate(vpred_values = ifelse(prim_method == 1, pred_values, NA))
-navco <- navco %>% mutate(vpred_values_fit = ifelse(prim_method == 1, pred_values, NA))
-
-ggplot(navco, aes(x= size_midpoint, y = vpred_values)) + geom_point() + geom_smooth(method = 'loess') + geom_jitter() +
+navco$vpred_values = ifelse(navco$prim_method == 1, navco$pred_values, NA)
+navco_filter <- navco %>% filter(!is.na(vpred_values), !is.na(size_midpoint))
+ggplot(navco_filter, aes(x= size_midpoint, y = vpred_values)) + geom_point() + geom_line() + geom_jitter() +
   labs( title = "Violent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
 
 #nonviolent
-navco <- navco %>% mutate(nvpred_values = ifelse(prim_method == 0, pred_values, NA))
-ggplot(navco, aes(x= size_midpoint, y = nvpred_values)) + geom_point() + geom_smooth(method = "loess") + geom_jitter() +
+navco$nvpred_values = ifelse(navco$prim_method == 0, navco$pred_values, NA)
+navco_filter <- navco %>% filter(!is.na(nvpred_values), !is.na(size_midpoint))
+ggplot(navco_filter, aes(x= size_midpoint, y = nvpred_values)) + geom_point() + geom_line() + geom_jitter() +
   labs( title = "Nonviolent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint")
 
 #plots with log
@@ -45,12 +39,15 @@ ggplot(navco, aes(x= size_log, y = vpred_values)) + geom_point() + geom_smooth(m
 ggplot(navco, aes(x= size_log, y = nvpred_values)) + geom_point() + geom_smooth(method = "loess") + geom_jitter() +
   labs( title = "Nonviolent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Log10 Movement Size Midpoint")
 
-#plots with groups
 
+predictions <- as.data.frame(cbind(navco$size_midpoint, navco$vpred_values, navco$nvpred_values))
+colnames(predictions)[1] <- "size_midpoint"
+colnames(predictions)[2] <- "violent"
+colnames(predictions)[3] <- "nonviolent"
 
+predictions <- predictions %>% group_by(size_midpoint) %>% summarize(minPred = min(pred_values))
 
-navco_sum <- navco %>% group_by(size_midpoint) %>% summarize(minPred = min(pred_values))
-
+#test difference between two models
 
 #error bar
 #summarize, i want unique predictions
