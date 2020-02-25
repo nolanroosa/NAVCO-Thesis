@@ -33,8 +33,23 @@ ggplot(navco_nonviolent, aes(x= size_midpoint, y = pred_values)) + geom_point() 
   labs( title = "Nonviolent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint") +
   ylim(0,1)
 
-#plots with log
-#violent
+#test difference
+nv_predictions <- navco_nonviolent %>% group_by(size_midpoint) %>% summarize(nonviolent = min(pred_values), se = min(pred_values_se))
+v_predictions <- navco_violent %>% group_by(size_midpoint) %>% summarize(violent = min(pred_values), se = min(pred_values_se))
+
+difference <- as.data.frame(cbind(v_predictions$size_midpoint, v_predictions$violent, v_predictions$se, nv_predictions$nonviolent, nv_predictions$se))
+colnames(difference)[1] <- "size_midpoint"
+colnames(difference)[2] <- "violent"
+colnames(difference)[3] <- "se_violent"
+colnames(difference)[4]<- "nonviolent"
+colnames(difference)[5] <- "se_nonviolent"
+difference$difference <- difference$violent - difference$nonviolent
+
+difference$se_difference <- ((difference$se_violent^2/nrow(navco_violent)) + difference$se_nonviolent^2/nrow(navco_violent))
+difference <- difference %>% mutate(signif_test1 = ifelse(difference >= 1.65*abs(se_difference), 1, 0))
+difference <- difference %>% mutate(signif_test3 = ifelse(difference >= 2.58*abs(se_difference), 1, 0))
+
+
 ggplot(navco_violent, aes(x= size_log, y = pred_values)) + geom_point() + geom_smooth(method = 'loess') + geom_jitter() +
   labs( title = "Violent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Log10 Movement Size Midpoint") + 
   ylim(0,1)
@@ -42,13 +57,3 @@ ggplot(navco_violent, aes(x= size_log, y = pred_values)) + geom_point() + geom_s
 ggplot(navco_nonviolent, aes(x= size_log, y = pred_values)) + geom_point() + geom_smooth(method = "loess") + geom_jitter() +
   labs( title = "Nonviolent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Log10 Movement Size Midpoint") +
   ylim(0,1)
-
-
-#test difference
-predictions <- navco_nonviolent %>% group_by(size_midpoint) %>% summarize(nonviolent = min(pred_values))
-predictions$violent <- navco_violent %>% group_by(size_midpoint) %>% summarize(violent = min(pred_values))
-
-#error bar
-
-#marxist is grievances, setting the terms of the debate, make a gap obvious
-#mao, tilly, thoreau
