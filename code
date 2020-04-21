@@ -1,5 +1,6 @@
 library(tidyverse)
 library(ggplot2)
+library(jtools)
 setwd("/Users/nolanroosa/Desktop")
 
 navco <- read.csv(file = "navco.csv")
@@ -11,12 +12,15 @@ navco <- navco %>% group_by(id) %>% arrange(id) %>% mutate(cum_progress = cumsum
 #violent model
 navco_violent <- navco %>% filter(prim_method == 1)
 violent_model <- glm(first_event ~ size_midpoint, family = binomial(link = 'logit'), data = navco_violent, na.action=na.exclude)
+summ(violent_model)
+
 navco_violent$pred_values <- predict(violent_model, type="response")
 navco_violent$pred_values_se <- predict(violent_model, type="response", se.fit=TRUE)$se.fit
 
 #nonviolent model
 navco_nonviolent <- navco %>% filter(prim_method == 0)
 nonviolent_model <- glm(first_event ~ size_midpoint, family = binomial(link = 'logit'), data = navco_nonviolent, na.action=na.exclude)
+summ(nonviolent_model)
 navco_nonviolent$pred_values <-  predict(nonviolent_model, type="response")
 navco_nonviolent$pred_values_se <- predict(nonviolent_model, type="response", se.fit=TRUE)$se.fit
 
@@ -25,7 +29,7 @@ navco_nonviolent <- navco_nonviolent %>% filter(!is.na(pred_values), !is.na(size
 
 #violent plot
 ggplot(navco_violent, aes(x= size_midpoint, y = pred_values)) + geom_point() + geom_line() + geom_jitter() +
-  labs( title = "Violent Movement Size and Predicted Probabi```lity of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint") +
+  labs( title = "Violent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint") +
   ylim(0,1)
 
 #nonviolent plot
@@ -48,12 +52,11 @@ difference$difference <- difference$violent - difference$nonviolent
 difference$se_difference <- ((difference$se_violent^2/nrow(navco_violent)) + difference$se_nonviolent^2/nrow(navco_violent))
 difference <- difference %>% mutate(signif_test1 = ifelse(difference >= 1.65*abs(se_difference), 1, 0))
 difference <- difference %>% mutate(signif_test3 = ifelse(difference >= 2.58*abs(se_difference), 1, 0))
+difference <- difference %>% mutate(binary = ifelse())
 
-
-ggplot(navco_violent, aes(x= size_log, y = pred_values)) + geom_point() + geom_smooth(method = 'loess') + geom_jitter() +
-  labs( title = "Violent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Log10 Movement Size Midpoint") + 
-  ylim(0,1)
-#nonviolent
-ggplot(navco_nonviolent, aes(x= size_log, y = pred_values)) + geom_point() + geom_smooth(method = "loess") + geom_jitter() +
-  labs( title = "Nonviolent Movement Size and Predicted Probability of First Event", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Log10 Movement Size Midpoint") +
+#both lines
+ggplot(difference, aes(x = size_midpoint)) +
+  geom_line(aes(y = violent), color = "darkred")+
+  geom_line(aes(y = nonviolent), color = "steelblue")+
+  labs( title = "Methodology, Size, and Success", subtitle = "From NAVCO 2.0", y = "First Event Probability", x = "Movement Size Midpoint") +
   ylim(0,1)
